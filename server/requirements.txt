@@ -1,0 +1,6 @@
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+python-frontmatter==1.1.0
+sqlite-vec==0.1.7a2
+numpy==2.2.5
+httpx==0.28.1

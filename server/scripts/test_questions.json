@@ -1,0 +1,56 @@
+[
+  {
+    "q": "Kubernetes 환경에서 graceful shutdown이란 무엇인가?",
+    "type": "definition",
+    "expected_ground": true,
+    "topic": "graceful-shutdown"
+  },
+  {
+    "q": "Minikube에서 Ingress 컨트롤러 설정 방법은?",
+    "type": "procedural",
+    "expected_ground": true,
+    "topic": "ingress"
+  },
+  {
+    "q": "Jenkins 플러그인 Dependency 에러는 어떻게 해결하나?",
+    "type": "procedural",
+    "expected_ground": true,
+    "topic": "jenkins-plugin"
+  },
+  {
+    "q": "Pinpoint로 bootJar 실행 프로세스는 어떻게 확인하나?",
+    "type": "procedural",
+    "expected_ground": true,
+    "topic": "pinpoint-bootjar"
+  },
+  {
+    "q": "EKS를 이용한 Kubernetes 구축에서 EKS는 무엇인가?",
+    "type": "definition",
+    "expected_ground": true,
+    "topic": "eks"
+  },
+  {
+    "q": "CI/CD 파이프라인 설계의 핵심 고려 사항은?",
+    "type": "analytic",
+    "expected_ground": true,
+    "topic": "cicd-design"
+  },
+  {
+    "q": "RAG, Agent, Infra, Compliance를 동시에 다루는 엔지니어의 지식 정리법은?",
+    "type": "analytic",
+    "expected_ground": true,
+    "topic": "knowledge-orgn"
+  },
+  {
+    "q": "React useEffect 훅의 의존성 배열 사용 규칙은?",
+    "type": "out-of-domain",
+    "expected_ground": false,
+    "topic": "react"
+  },
+  {
+    "q": "Rust의 borrow checker 동작 원리는?",
+    "type": "out-of-domain",
+    "expected_ground": false,
+    "topic": "rust"
+  }
+]
