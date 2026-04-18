@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# Data
+server/data/
+*.db
+
+# ONNX exports (대용량, Git LFS 미사용)
+server/.e5-ko-onnx/
+mobile/app/src/main/assets/model.onnx
+mobile/app/src/main/assets/tokenizer.json
+*.onnx
+
+# Environment
+.env
+!.env.example
+
+# Android
+mobile/.gradle/
+mobile/build/
+mobile/app/build/
+mobile/local.properties
+*.iml
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# AI 작업 관리 (로컬 전용)
+CLAUDE.md
+PLAN.md
+PROGRESS.md
+.claude/
+
+# 적업관리
+task/
