@@ -45,10 +45,10 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { initialize() }
     }
 
-    private suspend fun initialize() {
+    private suspend fun initialize() = withContext(Dispatchers.IO) {
         _state.value = _state.value.copy(statusText = "DB 확인 중...")
 
-        // DB 로드
+        // DB 로드 (SQLite open + 쿼리는 IO 작업)
         if (chunkDb.isReady) {
             chunkDb.open()
             val chunks = chunkDb.loadAllChunks()
@@ -62,7 +62,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = _state.value.copy(statusText = "DB 없음 — 동기화 필요")
         }
 
-        // 임베딩 엔진 초기화
+        // 임베딩 엔진 초기화 (DJL tokenizer 내부 net check + ONNX asset read → IO 필수)
         try {
             embeddingEngine.initialize()
             _state.value = _state.value.copy(
@@ -70,12 +70,13 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 statusText = "임베딩 엔진 준비 완료"
             )
         } catch (e: Exception) {
+            Log.e("EdgeRag", "EmbeddingEngine.initialize failed", e)
             _state.value = _state.value.copy(
-                statusText = "임베딩 모델 없음 (assets/model.onnx 필요)"
+                statusText = "Embed 실패: ${e.javaClass.simpleName} — ${e.message ?: "(no msg)"}"
             )
         }
 
-        // LLM 초기화
+        // LLM 초기화 (내부에서 withContext(IO) 별도 처리하지만 상위도 IO)
         llmEngine.initialize()
         _state.value = _state.value.copy(
             llmReady = llmEngine.state == LlmEngine.State.READY,
@@ -130,16 +131,13 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         )
 
         viewModelScope.launch {
+            // 로컬 경로가 전부 준비됐을 때만 localSearch, 아니면 서버 시도.
+            // serverReachable 플래그는 startup 시점의 스냅샷이라 신뢰하지 않고
+            // 항상 서버 호출 → 실패 시 serverQuery 내부 catch가 에러 메시지 반환.
             val response = if (_state.value.dbReady && _state.value.embeddingReady) {
                 localSearch(text)
-            } else if (_state.value.serverReachable) {
-                serverQuery(text)
             } else {
-                ChatMessage(
-                    text = "오프라인 상태이며 로컬 DB가 준비되지 않았습니다. 동기화를 먼저 실행해주세요.",
-                    isUser = false,
-                    source = "system",
-                )
+                serverQuery(text)
             }
 
             _state.value = _state.value.copy(
