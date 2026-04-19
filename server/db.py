@@ -37,6 +37,15 @@ def _init_db(db_path: str, embed_dim: int) -> sqlite3.Connection:
             chunk_id INTEGER PRIMARY KEY,
             embedding float[{embed_dim}] distance_metric=cosine
         );
+        -- 모바일용: sqlite-vec 확장 없이 읽기 가능한 일반 테이블 (BLOB = float32 LE)
+        CREATE TABLE IF NOT EXISTS chunk_embeddings (
+            chunk_id INTEGER PRIMARY KEY,
+            embedding BLOB NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS meta (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        );
     """)
     return conn
 
@@ -62,5 +71,20 @@ def get_mobile_db() -> sqlite3.Connection:
 def reset_db(conn: sqlite3.Connection):
     """테이블 데이터 전체 삭제 (ingest 재실행 시)"""
     conn.execute("DELETE FROM chunk_vec")
+    conn.execute("DELETE FROM chunk_embeddings")
     conn.execute("DELETE FROM chunks")
     conn.commit()
+
+
+def set_meta(conn: sqlite3.Connection, key: str, value: str) -> None:
+    conn.execute(
+        "INSERT INTO meta(key, value) VALUES (?, ?) "
+        "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        (key, value),
+    )
+    conn.commit()
+
+
+def get_meta(conn: sqlite3.Connection, key: str) -> str | None:
+    row = conn.execute("SELECT value FROM meta WHERE key = ?", (key,)).fetchone()
+    return row[0] if row else None

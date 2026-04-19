@@ -7,9 +7,11 @@ import re
 
 from db import get_server_db
 from embed import embed_one, vec_to_blob
+from embed_st import embed_st
 from prompts import build_system_prompt_v4
 from config import (
     SERVER_EMBED_MODEL,
+    SERVER_EMBED_BACKEND,
     TOP_K,
     RAG_DISTANCE_MAX,
     RAG_MIN_K,
@@ -20,7 +22,11 @@ from config import (
 async def search_chunks(query: str) -> list[dict]:
     """쿼리 임베딩 → sqlite-vec cosine 검색 → 필터링 → top-k 반환"""
     db = get_server_db()
-    qv = await embed_one(SERVER_EMBED_MODEL, query)
+    if SERVER_EMBED_BACKEND == "sentence-transformers":
+        # e5 계열은 query/passage 프리픽스 비대칭이 필수 — is_query=True 강제
+        qv = embed_st(SERVER_EMBED_MODEL, [query], is_query=True)[0]
+    else:
+        qv = await embed_one(SERVER_EMBED_MODEL, query)
     blob = vec_to_blob(qv)
 
     rows = db.execute(

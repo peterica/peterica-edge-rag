@@ -8,15 +8,35 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import subprocess
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 from chunk import parse_markdown, chunk_section
-from db import get_server_db, get_mobile_db, reset_db
+from db import get_server_db, get_mobile_db, reset_db, set_meta
 from embed import embed, vec_to_blob
 from embed_st import embed_st
-from config import WIKI_DIR, SERVER_EMBED_MODEL, MOBILE_EMBED_MODEL, MOBILE_EMBED_BACKEND
+from config import (
+    WIKI_DIR,
+    SERVER_EMBED_MODEL,
+    SERVER_EMBED_BACKEND,
+    MOBILE_EMBED_MODEL,
+    MOBILE_EMBED_BACKEND,
+)
+
+
+def get_wiki_commit(wiki_dir: str) -> str:
+    """위키 저장소의 HEAD 커밋 해시. git 실패 시 'unknown' 반환."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", wiki_dir, "rev-parse", "HEAD"],
+            capture_output=True, text=True, check=True, timeout=5,
+        )
+        return out.stdout.strip()
+    except (subprocess.SubprocessError, FileNotFoundError):
+        return "unknown"
 
 BATCH_SIZE = 32
 
@@ -63,9 +83,14 @@ async def ingest_model(
 
         for c, v in zip(batch_chunks, vecs):
             blob = vec_to_blob(v)
+            cid = c[f"{label}_id"]
             conn.execute(
                 "INSERT INTO chunk_vec(chunk_id, embedding) VALUES (?, ?)",
-                (c[f"{label}_id"], blob),
+                (cid, blob),
+            )
+            conn.execute(
+                "INSERT INTO chunk_embeddings(chunk_id, embedding) VALUES (?, ?)",
+                (cid, blob),
             )
         total += len(batch_texts)
 
@@ -115,7 +140,7 @@ async def main():
     print(f"\n--- Server DB ({SERVER_EMBED_MODEL}) ---")
     await ingest_model(
         SERVER_EMBED_MODEL, get_server_db(), SERVER_EMBED_DIM, all_chunks, "server",
-        backend="ollama",
+        backend=SERVER_EMBED_BACKEND,
     )
 
     print(f"\n--- Mobile DB ({MOBILE_EMBED_MODEL}) ---")
@@ -124,7 +149,13 @@ async def main():
         backend=MOBILE_EMBED_BACKEND,
     )
 
-    print(f"\nDone. server.db + mobile.db generated.")
+    wiki_commit = get_wiki_commit(wiki_dir)
+    ingested_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    for conn in (get_server_db(), get_mobile_db()):
+        set_meta(conn, "wiki_commit", wiki_commit)
+        set_meta(conn, "ingested_at", ingested_at)
+    print(f"\nMeta: wiki_commit={wiki_commit[:12]}... ingested_at={ingested_at}")
+    print("Done. server.db + mobile.db generated.")
 
 
 if __name__ == "__main__":

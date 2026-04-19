@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-from fastapi import Depends, FastAPI, HTTPException
+import os
+import sqlite3
+
+from fastapi import Depends, FastAPI, Header, HTTPException, Response
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from auth import require_api_key
 from config import MOBILE_DB_PATH, HOST, PORT
+from db import get_meta
 from rag import search_chunks, build_system_prompt, render_answer
 from llm import chat_complete, LlmError
 
@@ -88,13 +92,43 @@ async def search(q: str, k: int = 3) -> list[SearchResult]:
     ]
 
 
+def _read_mobile_meta() -> dict:
+    """mobile.db에서 sync 메타 정보 독립 커넥션으로 조회."""
+    conn = sqlite3.connect(MOBILE_DB_PATH)
+    try:
+        wiki_commit = get_meta(conn, "wiki_commit") or "unknown"
+        ingested_at = get_meta(conn, "ingested_at") or "unknown"
+    finally:
+        conn.close()
+    size = os.path.getsize(MOBILE_DB_PATH) if os.path.exists(MOBILE_DB_PATH) else 0
+    return {
+        "wiki_commit": wiki_commit,
+        "ingested_at": ingested_at,
+        "db_size_bytes": size,
+    }
+
+
+@app.get("/sync/meta", dependencies=[Depends(require_api_key)])
+async def sync_meta() -> dict:
+    """mobile.db 동기화 메타데이터 (다운로드 없이 클라이언트 캐시 검증용)."""
+    return _read_mobile_meta()
+
+
 @app.get("/sync", dependencies=[Depends(require_api_key)])
-async def sync():
-    """모바일 DB 파일 다운로드"""
+async def sync(if_none_match: str | None = Header(default=None)):
+    """모바일 DB 파일 다운로드. wiki_commit 기반 ETag/304 캐시 지원."""
+    meta = _read_mobile_meta()
+    # ETag = wiki repo HEAD commit (내용 해시 아님 — 업스트림 소스 버전 토큰)
+    etag = f'"{meta["wiki_commit"]}"'
+
+    if if_none_match and if_none_match.strip() == etag:
+        return Response(status_code=304, headers={"ETag": etag})
+
     return FileResponse(
         path=MOBILE_DB_PATH,
         media_type="application/octet-stream",
         filename="mobile.db",
+        headers={"ETag": etag},
     )
 
 

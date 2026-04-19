@@ -3,7 +3,8 @@
 import os
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
-SERVER_EMBED_MODEL = os.getenv("SERVER_EMBED_MODEL", "bge-m3")
+SERVER_EMBED_MODEL = os.getenv("SERVER_EMBED_MODEL", "dragonkue/multilingual-e5-small-ko-v2")
+SERVER_EMBED_BACKEND = os.getenv("SERVER_EMBED_BACKEND", "sentence-transformers")  # ollama | sentence-transformers
 MOBILE_EMBED_MODEL = os.getenv("MOBILE_EMBED_MODEL", "dragonkue/multilingual-e5-small-ko-v2")
 MOBILE_EMBED_BACKEND = os.getenv("MOBILE_EMBED_BACKEND", "sentence-transformers")  # ollama | sentence-transformers
 
@@ -14,7 +15,7 @@ WIKI_DIR = os.getenv(
 SERVER_DB_PATH = os.getenv("SERVER_DB_PATH", "./data/server.db")
 MOBILE_DB_PATH = os.getenv("MOBILE_DB_PATH", "./data/mobile.db")
 
-SERVER_EMBED_DIM = int(os.getenv("SERVER_EMBED_DIM", "1024"))
+SERVER_EMBED_DIM = int(os.getenv("SERVER_EMBED_DIM", "384"))
 MOBILE_EMBED_DIM = int(os.getenv("MOBILE_EMBED_DIM", "384"))
 
 TOP_K = int(os.getenv("TOP_K", "12"))

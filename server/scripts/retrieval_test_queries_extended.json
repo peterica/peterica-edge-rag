@@ -1,0 +1,132 @@
+[
+  {
+    "q": "Kubernetes 환경에서 graceful shutdown이란?",
+    "relevant_docs": ["posts/2022/0183-Kubernetes-Kubernetes환경에서-graceful-shutdown이란.md"],
+    "category": "baseline"
+  },
+  {
+    "q": "Minikube에서 Ingress 컨트롤러를 설정하는 방법",
+    "relevant_docs": ["posts/2024/0492-인그레스-Ingress-컨트롤러로-Minikube에서-인그레스-설정하기.md"],
+    "category": "baseline"
+  },
+  {
+    "q": "Jenkins 플러그인 Dependency 에러를 수동으로 해결하는 법",
+    "relevant_docs": ["posts/2022/0136-JenKins-Plugin-Dependency-error-조치-Plugin수동-설치방법.md"],
+    "category": "baseline"
+  },
+  {
+    "q": "Pinpoint로 Spring bootJar 실행 프로세스 확인 스크립트",
+    "relevant_docs": ["posts/2021/0078-Spring-Pinpoint-활용한-bootJar-실행-Shellscript-정리.md"],
+    "category": "baseline"
+  },
+  {
+    "q": "EKS로 Kubernetes 클러스터 구축하기",
+    "relevant_docs": ["posts/2022/0201-k8s-EKS를-이용한-Kubernetes-구축-EKS-생성.md"],
+    "category": "baseline"
+  },
+  {
+    "q": "APM 도구 PinPoint 소개",
+    "relevant_docs": ["posts/2020/0031-APM-PinPoint-APM.md"],
+    "category": "baseline"
+  },
+  {
+    "q": "ChatGPT Fine-tuning이 의미하는 것",
+    "relevant_docs": ["posts/2023/0367-AI-ChatGPT를-Fine-tuning-한다는-것은.md"],
+    "category": "baseline"
+  },
+  {
+    "q": "최근 대규모 언어 모델이 급격히 성장하는 이유",
+    "relevant_docs": ["posts/2024/0762-AI-최근-대규모-언어-모델-LLM-의-급격한-성장-이유.md"],
+    "category": "baseline"
+  },
+  {
+    "q": "RAG와 Agent, Infra를 동시에 다루는 엔지니어의 지식 정리",
+    "relevant_docs": ["posts/2025/0997-AI-RAG-Agent-Infra-Compliance를-동시에-다루는-엔지니어의-지식-정리법.md"],
+    "category": "baseline"
+  },
+  {
+    "q": "CI/CD 파이프라인 설계의 핵심 원칙",
+    "relevant_docs": ["concepts/ci-cd-pipeline-design.md"],
+    "category": "baseline"
+  },
+  {
+    "q": "컨테이너화와 오케스트레이션의 개념",
+    "relevant_docs": ["concepts/containerization-and-orchestration.md"],
+    "category": "baseline"
+  },
+  {
+    "q": "모니터링과 옵저버빌리티 차이",
+    "relevant_docs": ["concepts/monitoring-and-observability.md"],
+    "category": "baseline"
+  },
+  {
+    "q": "Kubernetes 관련 개념 정리",
+    "relevant_docs": ["entities/kubernetes.md", "moc/MOC-Kubernetes.md"],
+    "category": "baseline"
+  },
+  {
+    "q": "LLM 개념 요약",
+    "relevant_docs": ["entities/llm.md", "moc/MOC-LLM.md"],
+    "category": "baseline"
+  },
+  {
+    "q": "DevOps 주요 주제 모음",
+    "relevant_docs": ["moc/MOC-DevOps.md"],
+    "category": "baseline"
+  },
+  {
+    "q": "What is graceful shutdown in Kubernetes?",
+    "relevant_docs": ["posts/2022/0183-Kubernetes-Kubernetes환경에서-graceful-shutdown이란.md"],
+    "category": "english"
+  },
+  {
+    "q": "How to install and configure the Ingress controller on Minikube?",
+    "relevant_docs": ["posts/2024/0492-인그레스-Ingress-컨트롤러로-Minikube에서-인그레스-설정하기.md"],
+    "category": "english"
+  },
+  {
+    "q": "APM 도구로 Spring 애플리케이션 실행 상태를 모니터링하면서 CI/CD 파이프라인에 자동 배포를 통합하려면 무엇을 고려해야 하는가",
+    "relevant_docs": [
+      "posts/2020/0031-APM-PinPoint-APM.md",
+      "posts/2021/0078-Spring-Pinpoint-활용한-bootJar-실행-Shellscript-정리.md",
+      "concepts/ci-cd-pipeline-design.md"
+    ],
+    "category": "long_context"
+  },
+  {
+    "q": "ChatGPT와 같은 LLM을 특정 도메인 데이터로 Fine-tuning하는 과정과, 최근 대규모 언어모델이 이렇게 빠르게 성장한 기술적 배경은 어떻게 연결되는가",
+    "relevant_docs": [
+      "posts/2023/0367-AI-ChatGPT를-Fine-tuning-한다는-것은.md",
+      "posts/2024/0762-AI-최근-대규모-언어-모델-LLM-의-급격한-성장-이유.md"
+    ],
+    "category": "long_context"
+  },
+  {
+    "q": "Kubernetes 운영 자료 전반을 훑어보고 싶다",
+    "relevant_docs": [
+      "entities/kubernetes.md",
+      "moc/MOC-Kubernetes.md",
+      "posts/2022/0201-k8s-EKS를-이용한-Kubernetes-구축-EKS-생성.md"
+    ],
+    "category": "ambiguous"
+  },
+  {
+    "q": "RAG와 에이전트, AI 인프라를 공부하는 엔지니어 관점 글",
+    "relevant_docs": [
+      "posts/2025/0997-AI-RAG-Agent-Infra-Compliance를-동시에-다루는-엔지니어의-지식-정리법.md",
+      "entities/llm.md",
+      "moc/MOC-LLM.md"
+    ],
+    "category": "ambiguous"
+  },
+  {
+    "q": "DevOps 전반의 개념과 도구들을 폭넓게 소개해 줘",
+    "relevant_docs": [
+      "moc/MOC-DevOps.md",
+      "concepts/ci-cd-pipeline-design.md",
+      "concepts/monitoring-and-observability.md",
+      "concepts/containerization-and-orchestration.md"
+    ],
+    "category": "ambiguous"
+  }
+]
