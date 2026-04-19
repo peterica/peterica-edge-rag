@@ -12,7 +12,11 @@ server/data/
 server/.e5-ko-onnx/
 mobile/app/src/main/assets/model.onnx
 mobile/app/src/main/assets/tokenizer.json
+mobile/app/src/main/assets/tokenizer.onnx
 *.onnx
+
+# 모바일 LiteRT 모델 (2.4GB, HuggingFace에서 수동 다운로드)
+mobile/model-download/
 
 # Environment
 .env
