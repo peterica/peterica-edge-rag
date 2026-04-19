@@ -99,6 +99,68 @@ async def ingest_model(
     print(f"  [{label}] {model} ({backend}): {total} chunks, {embed_dim}dim, {elapsed:.1f}s")
 
 
+async def ingest_unified(
+    model: str,
+    server_conn,
+    mobile_conn,
+    embed_dim: int,
+    all_chunks: list[dict],
+    backend: str,
+):
+    """동일 모델·차원·backend인 경우 양 DB에 동시 기록 (임베딩 1회).
+
+    chunk id를 explicit(1..N)으로 지정해 server/mobile 간 id 정합성 보장.
+    """
+    dbs = (server_conn, mobile_conn)
+    for conn in dbs:
+        reset_db(conn)
+
+    # 청크 메타데이터 — explicit id로 양 DB에 동일 row 삽입
+    for idx, c in enumerate(all_chunks, start=1):
+        c["id"] = idx
+        for conn in dbs:
+            conn.execute(
+                """INSERT INTO chunks(id, doc_path, title, heading, ord, text, tags, source_hash)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (idx, c["doc_path"], c["title"], c["heading"], c["ord"],
+                 c["text"], c["tags"], c["source_hash"]),
+            )
+    for conn in dbs:
+        conn.commit()
+
+    # 배치 임베딩 1회 → 양 DB에 동일 blob 기록
+    texts = [c["text"] for c in all_chunks]
+    total = 0
+    t0 = time.time()
+
+    for i in range(0, len(texts), BATCH_SIZE):
+        batch_texts = texts[i : i + BATCH_SIZE]
+        batch_chunks = all_chunks[i : i + BATCH_SIZE]
+        if backend == "sentence-transformers":
+            vecs = embed_st(model, batch_texts, is_query=False)
+        else:
+            vecs = await embed(model, batch_texts)
+
+        for c, v in zip(batch_chunks, vecs):
+            blob = vec_to_blob(v)
+            cid = c["id"]
+            for conn in dbs:
+                conn.execute(
+                    "INSERT INTO chunk_vec(chunk_id, embedding) VALUES (?, ?)",
+                    (cid, blob),
+                )
+                conn.execute(
+                    "INSERT INTO chunk_embeddings(chunk_id, embedding) VALUES (?, ?)",
+                    (cid, blob),
+                )
+        total += len(batch_texts)
+
+    for conn in dbs:
+        conn.commit()
+    elapsed = time.time() - t0
+    print(f"  [unified] {model} ({backend}): {total} chunks × 2 DBs, {embed_dim}dim, {elapsed:.1f}s")
+
+
 async def main():
     wiki_dir = WIKI_DIR
     if not Path(wiki_dir).exists():
@@ -134,20 +196,36 @@ async def main():
 
     print(f"parsed {len(all_chunks)} chunks from {len(files)} files")
 
-    # Step 2: 듀얼 임베딩 (순차)
+    # Step 2: 임베딩 — 동일 모델이면 unified(1회), 다르면 dual(2회)
     from config import SERVER_EMBED_DIM, MOBILE_EMBED_DIM
 
-    print(f"\n--- Server DB ({SERVER_EMBED_MODEL}) ---")
-    await ingest_model(
-        SERVER_EMBED_MODEL, get_server_db(), SERVER_EMBED_DIM, all_chunks, "server",
-        backend=SERVER_EMBED_BACKEND,
+    same_embed = (
+        SERVER_EMBED_MODEL == MOBILE_EMBED_MODEL
+        and SERVER_EMBED_DIM == MOBILE_EMBED_DIM
+        and SERVER_EMBED_BACKEND == MOBILE_EMBED_BACKEND
     )
 
-    print(f"\n--- Mobile DB ({MOBILE_EMBED_MODEL}) ---")
-    await ingest_model(
-        MOBILE_EMBED_MODEL, get_mobile_db(), MOBILE_EMBED_DIM, all_chunks, "mobile",
-        backend=MOBILE_EMBED_BACKEND,
-    )
+    if same_embed:
+        print(f"\n--- Unified (server+mobile: {SERVER_EMBED_MODEL}, {SERVER_EMBED_DIM}dim) ---")
+        await ingest_unified(
+            SERVER_EMBED_MODEL,
+            get_server_db(),
+            get_mobile_db(),
+            SERVER_EMBED_DIM,
+            all_chunks,
+            backend=SERVER_EMBED_BACKEND,
+        )
+    else:
+        print(f"\n--- Server DB ({SERVER_EMBED_MODEL}) ---")
+        await ingest_model(
+            SERVER_EMBED_MODEL, get_server_db(), SERVER_EMBED_DIM, all_chunks, "server",
+            backend=SERVER_EMBED_BACKEND,
+        )
+        print(f"\n--- Mobile DB ({MOBILE_EMBED_MODEL}) ---")
+        await ingest_model(
+            MOBILE_EMBED_MODEL, get_mobile_db(), MOBILE_EMBED_DIM, all_chunks, "mobile",
+            backend=MOBILE_EMBED_BACKEND,
+        )
 
     wiki_commit = get_wiki_commit(wiki_dir)
     ingested_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
