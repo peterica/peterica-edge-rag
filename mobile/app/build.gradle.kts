@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -30,8 +32,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlin {
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_17
+        }
     }
 
     buildFeatures {
@@ -54,9 +58,8 @@ dependencies {
     implementation("androidx.core:core-ktx:1.16.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.0")
 
-    // LiteRT-LM (Gemma 4 E2B on-device LLM)
-    // TODO: 실제 공개된 버전 확인 후 활성화
-    // implementation("com.google.ai.edge.litertlm:litertlm-android:0.1.0")
+    // LiteRT-LM (Gemma 4 E2B on-device LLM) — 2026-04 공식 GA
+    implementation("com.google.ai.edge.litertlm:litertlm-android:latest.release")
 
     // ONNX Runtime (e5-small-ko-v2 embedding)
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.24.3")
