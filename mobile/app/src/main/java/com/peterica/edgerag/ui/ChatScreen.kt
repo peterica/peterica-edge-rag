@@ -107,7 +107,16 @@ private fun TopBar(state: ChatUiState, onSync: () -> Unit) {
         title = {
             Column {
                 Text("Peterica Edge RAG", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Text(state.statusText, fontSize = 11.sp, color = Color.Gray)
+                // 상시 상태 아이콘 라인
+                Text(state.statusIcons, fontSize = 11.sp, color = Color.Gray)
+                // 일시 메시지 (있을 때만, 3번째 줄) — 동기화 결과/에러 auto-clear
+                state.transientMessage?.let {
+                    Text(
+                        text = it,
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
         },
         actions = {

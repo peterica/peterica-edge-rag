@@ -82,6 +82,29 @@ class ChunkDatabase(private val context: Context) {
         dbFile.writeBytes(bytes)
     }
 
+    /**
+     * 로컬 mobile.db의 meta.wiki_commit (P2-14 ETag 비교용).
+     * DB 파일이 없거나 meta 테이블이 없는 구버전이면 null.
+     * 본 함수는 short-lived read-only 커넥션을 새로 열어 메인 open()과 독립.
+     */
+    fun getLocalWikiCommit(): String? {
+        if (!dbFile.exists()) return null
+        return try {
+            SQLiteDatabase.openDatabase(
+                dbFile.path, null, SQLiteDatabase.OPEN_READONLY,
+            ).use { conn ->
+                conn.rawQuery(
+                    "SELECT value FROM meta WHERE key = 'wiki_commit' LIMIT 1", null,
+                ).use { c ->
+                    if (c.moveToFirst()) c.getString(0) else null
+                }
+            }
+        } catch (_: Exception) {
+            // meta 테이블 없음(구버전) / DB 파손 등 → null 처리해 전체 다운로드 유도
+            null
+        }
+    }
+
     companion object {
         fun blobToFloatArray(blob: ByteArray): FloatArray {
             val buffer = java.nio.ByteBuffer.wrap(blob).order(java.nio.ByteOrder.LITTLE_ENDIAN)

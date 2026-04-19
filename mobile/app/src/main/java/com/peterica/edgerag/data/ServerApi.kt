@@ -3,10 +3,12 @@ package com.peterica.edgerag.data
 import com.peterica.edgerag.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.Streaming
 import java.util.concurrent.TimeUnit
@@ -38,6 +40,13 @@ data class SearchResultDto(
     val preview: String,
 )
 
+/** /sync/meta 응답 — P3-5 서버 계약과 동일 */
+data class SyncMetaDto(
+    val wiki_commit: String,
+    val ingested_at: String,
+    val db_size_bytes: Long,
+)
+
 interface ServerApiService {
     @POST("/query")
     suspend fun query(@Body request: QueryRequest): QueryResponse
@@ -48,9 +57,20 @@ interface ServerApiService {
         @retrofit2.http.Query("k") k: Int = 3,
     ): List<SearchResultDto>
 
+    /** wiki HEAD commit + DB 크기 조회 (다운로드 없이 캐시 검증용) */
+    @GET("/sync/meta")
+    suspend fun syncMeta(): SyncMetaDto
+
+    /**
+     * mobile.db 다운로드. If-None-Match 헤더에 현재 로컬 ETag를 넣으면
+     * 서버가 같은 버전일 때 304 Not Modified를 반환 → body 없음.
+     * Retrofit 기본 호출은 non-2xx에서 예외를 던지므로 Response wrapper로 상태 코드 접근.
+     */
     @GET("/sync")
     @Streaming
-    suspend fun syncDb(): ResponseBody
+    suspend fun syncDb(
+        @Header("If-None-Match") ifNoneMatch: String? = null,
+    ): Response<ResponseBody>
 
     @GET("/health")
     suspend fun health(): Map<String, String>
@@ -76,7 +96,12 @@ object ServerApi {
     suspend fun isServerReachable(): Boolean = try {
         service.health()
         true
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        // P2-17: silent catch가 디버깅을 막아 원인 파악 불가했음. 진단 로그 추가
+        android.util.Log.w(
+            "EdgeRag",
+            "isServerReachable failed: ${e.javaClass.simpleName} — ${e.message}",
+        )
         false
     }
 }
