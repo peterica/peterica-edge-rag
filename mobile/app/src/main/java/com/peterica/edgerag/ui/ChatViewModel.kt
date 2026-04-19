@@ -229,11 +229,11 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 )
             }
 
-            // 시스템 프롬프트 — v4-lite-v2 (Step B-1 재설계).
-            // v1 (negative only)은 과제약으로 "관련 포스트에 언급되어 있습니다" 수준의 회피 답변 유발.
-            // 원인: "추측 금지" 같은 negative 지시만 주면 모델이 "안 하는 게 안전"으로 수렴.
-            // 서버 v4는 JSON 스키마가 강한 positive constraint 역할을 해서 균형이 맞음. 자연어 버전에선
-            // (a) positive 지시 추가, (b) 거부 조건 좁힘, (c) 길이 hint로 균형을 복구.
+            // 시스템 프롬프트 — v4-lite-v2 (Step B-1).
+            // P2-18에서 서버 v4 JSON을 이식해봤지만 E2B(2B)에서 역효과 — JSON 제약에 신경쓰다
+            // 답변이 질문 제목 반복 수준까지 축소됨. 품질로는 자연어 v4-lite-v2가 우수해 롤백.
+            // renderAnswer + Log는 남겨둠 — raw가 JSON 아니면 폴백으로 그대로 통과하므로 무해.
+            // 4B 모델로 스케일업 시 프롬프트만 v4 JSON으로 다시 바꾸면 즉시 재활성.
             val ctx = results.mapIndexed { i, r ->
                 "[#${i + 1}] source=${r.chunk.docPath} heading=${r.chunk.heading ?: ""}\n${r.chunk.text}"
             }.joinToString("\n\n---\n\n")
@@ -253,8 +253,12 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 append(ctx)
             }
 
-            // LLM 생성
-            val answer = llmEngine.generate(systemPrompt, query)
+            // LLM 생성 + renderAnswer(JSON이면 포맷, 아니면 폴백으로 원문 통과).
+            val raw = llmEngine.generate(systemPrompt, query)
+            val answer = renderAnswer(raw)
+            Log.i("EdgeRag", "localSearch Q: $query")
+            Log.i("EdgeRag", "localSearch raw: $raw")
+            Log.i("EdgeRag", "localSearch rendered: $answer")
 
             val citations = results.mapIndexed { i, r ->
                 Citation(
@@ -298,6 +302,48 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 isUser = false,
                 source = "server-error",
             )
+        }
+    }
+
+    /**
+     * v4 JSON 스키마 응답을 사람 가독 텍스트로 렌더. 서버 `rag.render_answer`와 동치.
+     * - grounded=false → "문서에 근거 없음"
+     * - grounded=true  → "문장1 [#c]. 문장2 [#c][#c]." 형식
+     * - JSON 파싱 실패 → 원문 그대로 (폴백 — E2B가 스키마 깨뜨린 경우 사용자에게라도 뭔가 보여줌)
+     */
+    private fun renderAnswer(raw: String): String {
+        var cleaned = raw.trim()
+        if (cleaned.startsWith("```")) {
+            cleaned = cleaned.removePrefix("```json").removePrefix("```").trimStart()
+            val fenceEnd = cleaned.lastIndexOf("```")
+            if (fenceEnd >= 0) cleaned = cleaned.substring(0, fenceEnd).trimEnd()
+        }
+        return try {
+            val data = org.json.JSONObject(cleaned)
+            if (!data.optBoolean("grounded", false)) return "문서에 근거 없음"
+            val sentences = data.optJSONArray("sentences") ?: return "문서에 근거 없음"
+            val parts = mutableListOf<String>()
+            for (i in 0 until sentences.length()) {
+                val s = sentences.optJSONObject(i) ?: continue
+                var text = s.optString("text", "").trim()
+                if (text.isEmpty()) continue
+                val citeArr = s.optJSONArray("cite")
+                val cites = mutableListOf<Int>()
+                if (citeArr != null) {
+                    for (j in 0 until citeArr.length()) cites.add(citeArr.optInt(j))
+                }
+                var trailing = ""
+                while (text.isNotEmpty() && text.last() in ".?!".toSet()) {
+                    trailing = text.last() + trailing
+                    text = text.dropLast(1)
+                }
+                if (trailing.isEmpty()) trailing = "."
+                val citeStr = cites.joinToString("") { "[#$it]" }
+                parts.add("${text.trimEnd()} $citeStr$trailing".trim())
+            }
+            if (parts.isEmpty()) "문서에 근거 없음" else parts.joinToString(" ")
+        } catch (_: org.json.JSONException) {
+            raw
         }
     }
 
