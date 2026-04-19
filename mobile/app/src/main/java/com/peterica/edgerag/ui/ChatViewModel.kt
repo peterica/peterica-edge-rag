@@ -120,8 +120,8 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = _state.value.copy(isSyncing = true, transientMessage = "DB 동기화 중...")
             try {
                 val result = withContext(Dispatchers.IO) {
-                    val localCommit = chunkDb.getLocalWikiCommit()
-                    val etag = localCommit?.let { "\"$it\"" }
+                    val localEtag = chunkDb.getLocalSyncEtag()
+                    val etag = localEtag?.let { "\"$it\"" }
 
                     val resp = ServerApi.service.syncDb(ifNoneMatch = etag)
                     when (resp.code()) {

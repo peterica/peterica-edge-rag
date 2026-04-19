@@ -98,12 +98,15 @@ def _read_mobile_meta() -> dict:
     try:
         wiki_commit = get_meta(conn, "wiki_commit") or "unknown"
         ingested_at = get_meta(conn, "ingested_at") or "unknown"
+        # sync_etag 미존재(구 ingest) 시 wiki_commit으로 폴백
+        sync_etag = get_meta(conn, "sync_etag") or wiki_commit
     finally:
         conn.close()
     size = os.path.getsize(MOBILE_DB_PATH) if os.path.exists(MOBILE_DB_PATH) else 0
     return {
         "wiki_commit": wiki_commit,
         "ingested_at": ingested_at,
+        "sync_etag": sync_etag,
         "db_size_bytes": size,
     }
 
@@ -116,10 +119,10 @@ async def sync_meta() -> dict:
 
 @app.get("/sync", dependencies=[Depends(require_api_key)])
 async def sync(if_none_match: str | None = Header(default=None)):
-    """모바일 DB 파일 다운로드. wiki_commit 기반 ETag/304 캐시 지원."""
+    """모바일 DB 파일 다운로드. sync_etag(wiki_commit+chunker_version) 기반 ETag/304 캐시 지원."""
     meta = _read_mobile_meta()
-    # ETag = wiki repo HEAD commit (내용 해시 아님 — 업스트림 소스 버전 토큰)
-    etag = f'"{meta["wiki_commit"]}"'
+    # ETag = wiki commit + chunker version (청킹 로직 bump 시 강제 재다운로드)
+    etag = f'"{meta["sync_etag"]}"'
 
     if if_none_match and if_none_match.strip() == etag:
         return Response(status_code=304, headers={"ETag": etag})

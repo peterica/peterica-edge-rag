@@ -14,7 +14,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from chunk import parse_markdown, chunk_section
+from chunk import parse_markdown, chunk_section, is_weak_section, CHUNKER_VERSION
 from db import get_server_db, get_mobile_db, reset_db, set_meta
 from embed import embed, vec_to_blob
 from embed_st import embed_st
@@ -182,6 +182,8 @@ async def main():
 
         ord_idx = 0
         for sec in parsed.sections:
+            if is_weak_section(rel, sec["heading"]):
+                continue
             for chunk_text in chunk_section(sec["heading"], sec["body"]):
                 all_chunks.append({
                     "doc_path": rel,
@@ -229,10 +231,13 @@ async def main():
 
     wiki_commit = get_wiki_commit(wiki_dir)
     ingested_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    # sync_etag: 위키 해시가 같아도 청커 버전이 바뀌면 ETag 달라져 phone이 재다운로드.
+    sync_etag = f"{wiki_commit}:{CHUNKER_VERSION}"
     for conn in (get_server_db(), get_mobile_db()):
         set_meta(conn, "wiki_commit", wiki_commit)
         set_meta(conn, "ingested_at", ingested_at)
-    print(f"\nMeta: wiki_commit={wiki_commit[:12]}... ingested_at={ingested_at}")
+        set_meta(conn, "sync_etag", sync_etag)
+    print(f"\nMeta: wiki_commit={wiki_commit[:12]}... ingested_at={ingested_at} chunker={CHUNKER_VERSION}")
     print("Done. server.db + mobile.db generated.")
 
 

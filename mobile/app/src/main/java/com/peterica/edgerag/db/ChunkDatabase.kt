@@ -83,24 +83,25 @@ class ChunkDatabase(private val context: Context) {
     }
 
     /**
-     * 로컬 mobile.db의 meta.wiki_commit (P2-14 ETag 비교용).
-     * DB 파일이 없거나 meta 테이블이 없는 구버전이면 null.
-     * 본 함수는 short-lived read-only 커넥션을 새로 열어 메인 open()과 독립.
+     * 로컬 mobile.db의 sync ETag (P2-14 /sync If-None-Match 용).
+     * `sync_etag` 우선, 없으면 `wiki_commit` 폴백(구 ingest 호환).
+     * DB 파일/meta 미존재 → null → phone이 ETag 없이 요청해 서버가 200으로 응답(강제 재다운로드).
      */
-    fun getLocalWikiCommit(): String? {
+    fun getLocalSyncEtag(): String? {
         if (!dbFile.exists()) return null
         return try {
             SQLiteDatabase.openDatabase(
                 dbFile.path, null, SQLiteDatabase.OPEN_READONLY,
             ).use { conn ->
                 conn.rawQuery(
-                    "SELECT value FROM meta WHERE key = 'wiki_commit' LIMIT 1", null,
+                    "SELECT value FROM meta WHERE key IN ('sync_etag','wiki_commit') " +
+                        "ORDER BY CASE key WHEN 'sync_etag' THEN 0 ELSE 1 END LIMIT 1",
+                    null,
                 ).use { c ->
                     if (c.moveToFirst()) c.getString(0) else null
                 }
             }
         } catch (_: Exception) {
-            // meta 테이블 없음(구버전) / DB 파손 등 → null 처리해 전체 다운로드 유도
             null
         }
     }
