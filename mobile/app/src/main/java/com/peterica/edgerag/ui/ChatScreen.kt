@@ -28,7 +28,11 @@ fun ChatScreen(viewModel: ChatViewModel) {
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .imePadding()
+    ) {
         // 상단 바
         TopBar(state = state, onSync = { viewModel.syncDatabase() })
 

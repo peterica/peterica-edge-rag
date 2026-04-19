@@ -65,7 +65,7 @@ class ChunkDatabase(private val context: Context) {
         val embeddings = mutableMapOf<Int, FloatArray>()
 
         database.rawQuery(
-            "SELECT chunk_id, embedding FROM chunk_vec",
+            "SELECT chunk_id, embedding FROM chunk_embeddings",
             null
         ).use { cursor ->
             while (cursor.moveToNext()) {

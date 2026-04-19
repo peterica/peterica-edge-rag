@@ -1,14 +1,17 @@
 package com.peterica.edgerag.ui
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.peterica.edgerag.data.*
 import com.peterica.edgerag.db.ChunkDatabase
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class ChatMessage(
     val text: String,
@@ -91,22 +94,28 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isSyncing = true, statusText = "DB 동기화 중...")
             try {
-                val response = ServerApi.service.syncDb()
-                val bytes = response.bytes()
-                chunkDb.saveDbFile(bytes)
-                chunkDb.open()
-                val chunks = chunkDb.loadAllChunks()
-                val embeddings = chunkDb.loadEmbeddings()
-                vectorSearch.load(chunks, embeddings)
+                val chunkCount = withContext(Dispatchers.IO) {
+                    val response = ServerApi.service.syncDb()
+                    val bytes = response.bytes()
+                    chunkDb.saveDbFile(bytes)
+                    chunkDb.open()
+                    val chunks = chunkDb.loadAllChunks()
+                    val embeddings = chunkDb.loadEmbeddings()
+                    vectorSearch.load(chunks, embeddings)
+                    chunks.size
+                }
                 _state.value = _state.value.copy(
                     dbReady = true,
                     isSyncing = false,
-                    statusText = "동기화 완료 (${chunks.size} 청크)",
+                    statusText = "동기화 완료 ($chunkCount 청크)",
                 )
             } catch (e: Exception) {
+                Log.e("EdgeRag", "syncDatabase failed", e)
+                val kind = e.javaClass.simpleName
+                val msg = e.message ?: "(no msg)"
                 _state.value = _state.value.copy(
                     isSyncing = false,
-                    statusText = "동기화 실패: ${e.message}",
+                    statusText = "동기화 실패: $kind — $msg",
                 )
             }
         }

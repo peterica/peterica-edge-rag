@@ -10,7 +10,8 @@
         android:label="Peterica Edge RAG"
         android:supportsRtl="true"
         android:theme="@style/Theme.EdgeRag"
-        android:largeHeap="true">
+        android:largeHeap="true"
+        android:usesCleartextTraffic="true">
 
         <activity
             android:name=".MainActivity"
