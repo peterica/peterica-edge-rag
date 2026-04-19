@@ -21,7 +21,15 @@ print(f"원본: {orig_mb:.1f}MB → INT8: {int8_mb:.1f}MB ({int8_mb/orig_mb*100:
 
 ASSETS.mkdir(parents=True, exist_ok=True)
 shutil.copy(OUT, ASSETS / "model.onnx")
-shutil.copy(SRC / "tokenizer.json", ASSETS / "tokenizer.json")
+# P2-16: DJL tokenizer 제거. ORT-extensions 기반 tokenizer.onnx를 복사
+# (scripts/tokenizer_to_onnx.py로 사전 생성 필요)
+tok_src = SRC / "tokenizer.onnx"
+if not tok_src.exists():
+    raise SystemExit(
+        f"tokenizer.onnx not found at {tok_src} — "
+        "먼저 `python -m scripts.tokenizer_to_onnx`를 실행하세요."
+    )
+shutil.copy(tok_src, ASSETS / "tokenizer.onnx")
 
 print(f"\nassets에 배치 완료:")
 for f in ASSETS.iterdir():

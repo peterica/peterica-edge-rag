@@ -64,8 +64,9 @@ dependencies {
     // ONNX Runtime (e5-small-ko-v2 embedding)
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.24.3")
 
-    // DJL Tokenizer (for embedding model)
-    implementation("ai.djl.huggingface:tokenizers:0.25.0")
+    // ORT Extensions — SentencepieceTokenizer custom op for on-device tokenization (P2-16)
+    // DJL HuggingFaceTokenizer는 Android arm64 native 미배포(P2-15)로 실패 → 제거
+    implementation("com.microsoft.onnxruntime:onnxruntime-extensions-android:0.13.0")
 
     // Networking (server fallback)
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
