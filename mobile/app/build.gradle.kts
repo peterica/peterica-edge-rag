@@ -68,6 +68,11 @@ dependencies {
     // DJL HuggingFaceTokenizer는 Android arm64 native 미배포(P2-15)로 실패 → 제거
     implementation("com.microsoft.onnxruntime:onnxruntime-extensions-android:0.13.0")
 
+    // Markdown rendering for assistant messages (P2-12).
+    // LLM이 `**bold**`, `* bullet`, `## heading` 등 자유 포맷으로 출력하므로
+    // 자가 파서보다 full CommonMark 라이브러리가 유지보수 비용이 낮음.
+    implementation("com.mikepenz:multiplatform-markdown-renderer-m3-android:0.27.0-rc02")
+
     // Networking (server fallback)
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")

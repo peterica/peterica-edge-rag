@@ -1,6 +1,9 @@
 package com.peterica.edgerag.ui
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,9 +14,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mikepenz.markdown.m3.Markdown
+import com.peterica.edgerag.util.DocUrlMapper
 
 @Composable
 fun ChatScreen(viewModel: ChatViewModel) {
@@ -148,8 +155,10 @@ private fun EmptyState() {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MessageBubble(message: ChatMessage) {
+    val context = LocalContext.current
     val isUser = message.isUser
     val bgColor = if (isUser) MaterialTheme.colorScheme.primary
                   else MaterialTheme.colorScheme.surfaceVariant
@@ -166,17 +175,44 @@ private fun MessageBubble(message: ChatMessage) {
                 .background(bgColor, RoundedCornerShape(12.dp))
                 .padding(12.dp),
         ) {
-            Text(text = message.text, color = textColor, fontSize = 14.sp)
+            if (isUser) {
+                // 사용자 입력은 원본 그대로(마크다운 파싱 금지 — 일반 텍스트 보존)
+                Text(text = message.text, color = textColor, fontSize = 14.sp)
+            } else {
+                // LLM 답변은 마크다운 렌더링 (`**bold**`, `* bullet`, `## heading`, code 등)
+                Markdown(content = message.text)
+            }
         }
 
-        // 인용 표시
+        // 인용 표시 — posts/ 경로면 블로그 URL 탭으로 열기
         if (message.citations.isNotEmpty()) {
-            Text(
-                text = message.citations.joinToString(" | ") { "[#${it.index}] ${it.heading ?: it.doc_path}" },
-                fontSize = 10.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(top = 2.dp, start = 4.dp),
-            )
+            FlowRow(
+                modifier = Modifier
+                    .widthIn(max = 300.dp)
+                    .padding(top = 2.dp, start = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                message.citations.forEach { citation ->
+                    val url = DocUrlMapper.toBlogUrl(citation.doc_path)
+                    val label = "[#${citation.index}] ${citation.heading ?: citation.doc_path}"
+                    if (url != null) {
+                        Text(
+                            text = label,
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            textDecoration = TextDecoration.Underline,
+                            modifier = Modifier.clickable {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                )
+                            },
+                        )
+                    } else {
+                        Text(text = label, fontSize = 10.sp, color = Color.Gray)
+                    }
+                }
+            }
         }
 
         // 소스 표시
