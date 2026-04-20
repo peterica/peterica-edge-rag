@@ -5,6 +5,9 @@ sqlite-vec==0.1.7a2
 numpy==2.2.5
 httpx==0.28.1
 
+# P1-8: e5-small-ko-v2 임베딩 (Ollama에 없는 한국어 강화 모델)
+sentence-transformers>=3.0
+
 # P2-16: tokenizer.onnx 생성용 (scripts/tokenizer_to_onnx.py)
 # 0.13.0 핀 — Android AAR(onnxruntime-extensions-android:0.13.0)과 정확히 매칭.
 # 업그레이드 시 반드시 Android AAR 버전도 동시에 올려 parity 재검증 필요.
