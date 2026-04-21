@@ -118,10 +118,15 @@ peterica-edge-rag/
 │   │   │   └── ui/         #   ChatScreen, ChatViewModel
 │   │   └── assets/         #   model.onnx · tokenizer.onnx (로컬 배치, git 제외)
 │   └── scripts/            #   build · install · run · logcat · serve-apk
-└── docs/
-    ├── 001-project-research.md
-    ├── 002-Hybrid-AI-System.md   # 정의서 (v3)
-    └── assets/                    # README 스크린샷
+├── docs/
+│   ├── 001-project-research.md
+│   ├── 002-Hybrid-AI-System.md   # 정의서 (v3)
+│   └── assets/                    # README 스크린샷
+└── ondevice-rag/              # 문서 허브 — 최소 구현 가이드 + case 문서
+    ├── README.md              #   8단계 네비게이션, 독자 유형별 읽기 경로
+    ├── 00-main/               #   minimal-guide · architecture · checklist
+    ├── 01-context/            #   why · research · tooling-map
+    └── 02-cases/              #   embedding · chunking · retrieval · deployment · llm
 ```
 
 ## 학습 목적
@@ -141,6 +146,8 @@ peterica-edge-rag/
 - [1068 — 엣지 RAG의 AI 도구 지도: 왜 Python이 접합점인가](https://peterica.tistory.com/1068)
 - [1069 — 448MB가 113MB 되는 길: ONNX INT8 양자화 실전](https://peterica.tistory.com/1069)
 - **[1071 — 내 폰이 내 블로그에 답하게 만들었다: 온디바이스 RAG 다섯 가지 기술](https://peterica.tistory.com/1071)** ← 이 레포의 본편
+
+→ 본편 블로그의 기술 상세·선택 근거는 **[ondevice-rag/ 문서 허브](./ondevice-rag/)**에서 case 단위로 읽을 수 있습니다.
 
 ## 라이선스
 
